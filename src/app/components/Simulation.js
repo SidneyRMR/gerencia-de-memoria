@@ -1,93 +1,162 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion'; // Importando framer-motion
+import { motion } from 'framer-motion';
 
+// Classe do algoritmo FIFO Second Chance
 class FIFOSecondChance {
   constructor(capacidade) {
     this.capacidade = capacidade;
-    this.fila = new Array(capacidade).fill(null); // Lista circular de páginas na memória
-    this.indice = 0; // Índice para o algoritmo FIFO
-    this.faltas = 0; // Contador de falhas de página
+    this.fila = new Array(capacidade).fill(null);
+    this.indice = 0;
+    this.faltas = 0;
   }
 
-  // Função para verificar se a página está na memória e atualizar o bit de referência
   consultar(numero_pagina) {
     for (let i = 0; i < this.capacidade; i++) {
       const pagina = this.fila[i];
       if (pagina && pagina.numero === numero_pagina) {
-        pagina.R = 1; // Atualiza o bit de referência para 1
-        return true; // Página encontrada, não é necessário substituir
+        pagina.R = 1;
+        return true;
       }
     }
-    return false; // Página não encontrada, ocorre falha de página
+    return false;
   }
 
-  // Função para substituir a página quando ocorrer uma falha
   substituir(numero_pagina) {
     if (!this.consultar(numero_pagina)) {
       this.faltas += 1;
-
       while (true) {
         const paginaAtual = this.fila[this.indice];
-
         if (!paginaAtual || paginaAtual.R === 0) {
           const replacedPage = paginaAtual ? paginaAtual.numero : null;
           this.fila[this.indice] = new Pagina(numero_pagina);
           this.indice = (this.indice + 1) % this.capacidade;
-          return replacedPage; // Retorna a página substituída
+          return replacedPage;
         } else {
-          paginaAtual.R = 0; // Reseta o bit de referência
+          paginaAtual.R = 0;
           this.indice = (this.indice + 1) % this.capacidade;
         }
       }
     }
-    return null; // Nenhuma substituição realizada
+    return null;
   }
 
-  // Exibe o estado atual da memória (números das páginas)
   exibirMemoria() {
-    const memoria = this.fila.map((pagina) => (pagina ? pagina.numero : '-'));
-    return memoria;
+    return this.fila.map((pagina) => (pagina ? pagina.numero : '-'));
   }
 
-  // Exibe os bits de referência das páginas
   exibirBits() {
-    const bits = this.fila.map((pagina) => (pagina ? pagina.R : 0));
-    return bits;
+    return this.fila.map((pagina) => (pagina ? pagina.R : 0));
   }
 }
 
 class Pagina {
   constructor(numero) {
     this.numero = numero;
-    this.R = 0; // Inicializa o bit de referência para 0
+    this.R = 0;
   }
 }
 
+// Componente para entrada de dados
+const InputSection = ({ capacity, setCapacity, setReferenceString }) => {
+  const handleCapacityChange = (e) => {
+    const newCapacity = parseInt(e.target.value, 10);
+    if (!isNaN(newCapacity) && newCapacity > 0) {
+      setCapacity(newCapacity);
+    }
+  };
+
+  const handleReferenceStringChange = (e) => {
+    const value = e.target.value.trim();
+    const formatted = value.split(/\s+/).map(Number).filter((num) => !isNaN(num));
+    setReferenceString(formatted);
+  };
+
+  return (
+    <div className="flex flex-col items-center space-y-2">
+      <label className="text-gray-700 font-bold">Capacidade da Memória:</label>
+      <input
+        type="number"
+        className="border p-2 rounded text-center text-gray-500"
+        value={capacity}
+        onChange={handleCapacityChange}
+        min={1}
+      />
+      <label className="text-gray-700 font-bold">Sequência de Páginas:</label>
+      <input
+        type="text"
+        className="border p-2 rounded text-center text-gray-500"
+        placeholder="Ex: 1 2 3 5 6"
+        onChange={handleReferenceStringChange}
+      />
+    </div>
+  );
+};
+
+// Componente para tabela de resultados
+const SimulationTable = ({ steps }) => (
+  <div className="overflow-x-auto w-full">
+    <table className="table-auto w-full max-w-4xl border-collapse mt-5 shadow-lg text-sm md:text-base">
+      <thead className="bg-gray-800 text-white">
+        <tr>
+          <th className="border px-2 md:px-4 py-2">Passo</th>
+          <th className="border px-2 md:px-4 py-2">Página Referenciada</th>
+          <th className="border px-2 md:px-4 py-2">Memória</th>
+          <th className="border px-2 md:px-4 py-2">Bits</th>
+          <th className="border px-2 md:px-4 py-2">Falta de Página</th>
+        </tr>
+      </thead>
+      <tbody>
+        {steps.map((step) => (
+          <motion.tr
+            key={step.step}
+            className={`${step.pageFault === 'Sim' ? 'bg-red-100' : 'bg-gray-100'}`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <td className="border px-2 md:px-4 py-2 text-center font-semibold text-gray-500">{step.step}</td>
+            <td className="border px-2 md:px-4 py-2 text-center font-semibold text-gray-500">{step.page}</td>
+            <td className="border px-2 md:px-4 py-2 text-center font-semibold text-gray-500">
+              {step.memoryAfter.join(' ')}
+            </td>
+            <td className="border px-2 md:px-4 py-2 text-center font-semibold text-gray-500">
+              {step.bitsAfter.join(' ')}
+            </td>
+            <td
+              className={`border px-2 md:px-4 py-2 text-center font-semibold ${
+                step.pageFault === 'Sim' ? 'bg-red-200 text-white' : 'text-gray-900'
+              }`}
+            >
+              {step.pageFault}
+            </td>
+          </motion.tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
+// Componente principal
 const Simulation = () => {
-  const [capacity, setCapacity] = useState(5); // Número de quadros na memória
-  const [referenceString, setReferenceString] = useState([1, 2, 4, 6, 7, 8, 10, 11, 14]); // Sequência de páginas
+  const [capacity, setCapacity] = useState(5);
+  const [referenceString, setReferenceString] = useState([]);
   const [simulationSteps, setSimulationSteps] = useState([]);
   const [pageFaults, setPageFaults] = useState(0);
 
   const runSimulation = () => {
-    let memory = new FIFOSecondChance(capacity);
+    const memory = new FIFOSecondChance(capacity);
     const steps = [];
 
     referenceString.forEach((page, index) => {
       const memoryBefore = memory.exibirMemoria();
       const bitsBefore = memory.exibirBits();
 
-      // Verifique se a página já está na memória
-      const isPageInMemory = memoryBefore.includes(page);
-
-      // Se a página não estiver na memória, faça a substituição
-      const replacedPage = isPageInMemory ? null : memory.substituir(page);
+      const replacedPage = memory.substituir(page);
 
       const memoryAfter = memory.exibirMemoria();
       const bitsAfter = memory.exibirBits();
 
-      // Verificar se houve falha de página
-      const pageFault = !isPageInMemory; // Falha ocorre se a página não estava na memória
+      const pageFault = replacedPage !== null;
 
       steps.push({
         step: index + 1,
@@ -95,7 +164,7 @@ const Simulation = () => {
         replacedPage: replacedPage !== null ? replacedPage : '-',
         memoryAfter,
         bitsAfter,
-        pageFault: pageFault ? 'Sim' : 'Não', // Exibe 'Sim' ou 'Não' conforme a falha de página
+        pageFault: pageFault ? 'Sim' : 'Não',
       });
     });
 
@@ -105,57 +174,18 @@ const Simulation = () => {
 
   return (
     <div className="flex flex-col items-center space-y-5 p-5">
-      <div className="flex space-x-3">
-        <button
-          className="bg-blue-500 text-white p-2 rounded"
-          onClick={runSimulation}
-        >
-          Executar FIFO Second Chance
-        </button>
-      </div>
-
-      {/* Tabela Responsiva */}
-      <div className="overflow-x-auto w-full">
-        <table className="table-auto w-full max-w-4xl border-collapse mt-5 shadow-lg text-sm md:text-base">
-          <thead className="bg-gray-800 text-white">
-            <tr>
-              <th className="border px-2 md:px-4 py-2">Passo</th>
-              <th className="border px-2 md:px-4 py-2">Página Referenciada</th>
-              <th className="border px-2 md:px-4 py-2">Memória</th>
-              <th className="border px-2 md:px-4 py-2 min-w-[120px]">Bits</th>
-              <th className="border px-2 md:px-4 py-2">Falta de Página</th>
-            </tr>
-          </thead>
-          <tbody>
-            {simulationSteps.map((step) => (
-              <motion.tr
-                key={step.step}
-                className={`${step.pageFault === 'Sim' ? 'bg-red-100' : 'bg-gray-100'}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5 }} // Adicionando animação de transição suave
-              >
-                <td className="border px-2 md:px-4 py-2 text-center font-semibold text-gray-500">{step.step}</td>
-                <td className="border px-2 md:px-4 py-2 text-center font-semibold text-gray-500">{step.page}</td>
-                <td className="border px-2 md:px-4 py-2 text-center font-semibold text-gray-500">
-                  {step.memoryAfter.length > 0 ? step.memoryAfter.join(' ') : '-'}
-                </td>
-                <td className="border px-2 md:px-4 py-2 text-center font-semibold text-gray-500">
-                  {step.bitsAfter.length > 0 ? step.bitsAfter.join(' ') : '-'}
-                </td>
-                <td
-                  className={`border px-2 md:px-4 py-2 text-center font-semibold ${
-                    step.pageFault === 'Sim' ? 'bg-red-200 text-white' : 'text-gray-900'
-                  }`}
-                >
-                  {step.pageFault} {/* Mostra 'Sim' ou 'Não' conforme a falha de página */}
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
+      <InputSection
+        capacity={capacity}
+        setCapacity={setCapacity}
+        setReferenceString={setReferenceString}
+      />
+      <button
+        className="bg-blue-500 text-white p-2 rounded"
+        onClick={runSimulation}
+      >
+        Executar FIFO Second Chance
+      </button>
+      <SimulationTable steps={simulationSteps} />
       <div className="mt-5 text-lg md:text-xl font-bold">
         <p>Falhas de Página: {pageFaults}</p>
       </div>

@@ -129,7 +129,13 @@ Para aprimorar o algoritmo e a aplicação, algumas melhorias podem ser implemen
 6. **Otimização de Desempenho**  
    Melhorar a eficiência do código para lidar com sequências maiores e simulações mais complexas.
 
-7. **Compatibilidade Multi-Idiomas**  
-   Tornar a aplicação acessível para usuários de diferentes países, incluindo tradução para outros idiomas além do português.
 
 Estas melhorias podem tornar a aplicação mais robusta e educativa, beneficiando estudantes e profissionais interessados no funcionamento interno dos sistemas operacionais.
+
+---
+
+## Desenvolvedores
+[Brenda Gaudêncio](https://github.com/brendagaudencio)
+[Renan Mazzilli](https://github.com/renan-mazzilli)
+[Sidney Rafael](https://github.com/SidneyRMR)
+[Thaíto Batalini](https://github.com/thaitoGB)
